@@ -1,0 +1,15 @@
+== FOTO LAPANGAN (model.tflite) (n=15) ==
+  pred       sakit   sehat
+  true sakit       4       2
+  true sehat       3       6
+
+              precision    recall  f1-score   support
+
+       sakit     0.5714    0.6667    0.6154         6
+       sehat     0.7500    0.6667    0.7059         9
+
+    accuracy                         0.6667        15
+   macro avg     0.6607    0.6667    0.6606        15
+weighted avg     0.6786    0.6667    0.6697        15
+
+ditandai tidak yakin: 11/15 | akurasi yang yakin: 0.7500

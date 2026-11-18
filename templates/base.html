@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="id" class="js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Klorofil · Deteksi Kesehatan Daun{% endblock %}</title>
+  <meta name="description" content="Klorofil: deteksi daun sehat atau sakit dari foto, memakai CNN yang dilatih dari nol.">
+  <meta name="theme-color" content="#0B2E1C">
+  <script>
+    // tanpa JS/GSAP konten tetap tampil: kelas "js" (yang menyembunyikan elemen sebelum animasi) dilepas bila motion tak siap
+    setTimeout(function () { if (!window.__motion) document.documentElement.classList.remove("js"); }, 2500);
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315803D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z'/%3E%3Cpath d='M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12'/%3E%3C/svg%3E">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </svg>
+
+  <a class="skip" href="#main">Lewati ke konten</a>
+  <div class="curtain" aria-hidden="true"><svg class="curtain-leaf"><use href="#i-leaf"/></svg></div>
+
+  <header class="nav">
+    <a class="brand" href="{{ url_for('landing') }}" aria-label="Klorofil, beranda">
+      <svg class="icon"><use href="#i-leaf"/></svg><span>Klorofil</span>
+    </a>
+    <nav aria-label="Utama">
+      <a class="nav-link" href="{{ url_for('landing') }}" {% if request.endpoint == 'landing' %}aria-current="page"{% endif %}>Beranda</a>
+      <a class="nav-link" href="{{ url_for('tanaman') }}" {% if request.endpoint == 'tanaman' %}aria-current="page"{% endif %}>Daun dikenali</a>
+      <a class="btn btn-sun btn-sm" href="{{ url_for('deteksi') }}" {% if request.endpoint == 'deteksi' %}aria-current="page"{% endif %}>Mulai deteksi</a>
+    </nav>
+  </header>
+
+  <main id="main">{% block content %}{% endblock %}</main>
+
+  <footer class="foot">
+    <div class="foot-inner">
+      <a class="brand" href="{{ url_for('landing') }}"><svg class="icon"><use href="#i-leaf"/></svg><span>Klorofil</span></a>
+      <p>Tugas Besar AIT · CNN disusun dan dilatih dari nol, tanpa model pretrained.</p>
+      <p class="foot-small">Data: PlantVillage, PlantDoc, Leaf Images DB, Rice Leaf, iNaturalist (CC). Hasil model bukan diagnosis ahli.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js" defer></script>
+  <script src="{{ url_for('static', filename='motion.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

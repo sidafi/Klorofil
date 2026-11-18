@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Daun yang Dikenali · Klorofil{% endblock %}
+{% block body_class %}page-plants{% endblock %}
+{% block content %}
+{% set info = {
+  "andal": ("Andal", "Akurasi tinggi pada data uji. Hasil deteksi untuk daun ini paling bisa dipercaya."),
+  "cukup": ("Cukup", "Umumnya benar, tetapi kadang keliru. Perhatikan tingkat keyakinan."),
+  "terbatas": ("Terbatas", "Data model untuk tanaman ini kurang (misalnya hanya ada daun sehat atau hanya daun sakit). Hasil bisa keliru."),
+} %}
+<section class="page-hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <p class="eyebrow" data-hero>Dataset</p>
+  <h1 data-split>Daun yang dikenali.</h1>
+  <p class="lead" data-hero>Model dilatih dengan foto daun dari {{ total }} jenis tanaman. Cocokkan bentuk daunmu dengan contoh di bawah:
+    makin mirip dengan kelompok <b>Andal</b>, makin tepat hasil deteksinya.</p>
+</section>
+
+<section class="plants">
+  {% for st, items in groups if items %}
+  <div class="plant-group" id="{{ st }}">
+    <div class="section-head">
+      <p class="eyebrow eyebrow-dark" data-reveal><span class="pill pill-{{ st }}">{{ info[st][0] }}</span> {{ items|length }} tanaman</p>
+      <p class="group-note" data-reveal>{{ info[st][1] }}</p>
+    </div>
+    <ul class="plant-grid" role="list">
+      {% for p in items %}
+      <li class="plant" data-reveal>
+        <img src="{{ url_for('static', filename='plants/' ~ p.id ~ '.jpg') }}" alt="Contoh daun {{ p.nama }}{% if p.contoh == 'sakit' %} (sakit){% endif %}"
+             width="320" height="320" loading="lazy">
+        {% if p.contoh == 'sakit' %}<span class="plant-tag">contoh: daun sakit</span>{% endif %}
+        <div class="plant-body">
+          <h3>{{ p.nama }}</h3>
+          <p class="latin">{{ p.latin }}</p>
+          <p class="plant-acc">
+            {% if p.n_uji %}Akurasi uji <b>{{ '%.0f'|format(p.akurasi * 100) }}%</b> <small>({{ p.n_uji }} citra)</small>{% endif %}
+          </p>
+          <p class="plant-data">
+            <span><i class="dot dot-sehat"></i>sehat {{ '{:,}'.format(p.sehat).replace(',', '.') }}</span>
+            <span><i class="dot dot-sakit"></i>sakit {{ '{:,}'.format(p.sakit).replace(',', '.') }}</span>
+          </p>
+          {% if st != 'andal' %}<p class="plant-note">{{ p.keterangan }}.</p>{% endif %}
+          <p class="credit">Foto: {{ p.kredit }}</p>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+
+  <div class="plants-extra" data-reveal>
+    <h2>Di luar daftar ini?</h2>
+    <p>Model juga belajar dari penyakit umum lintas tanaman (karat, embun tepung, bercak <i>Septoria</i>/<i>Cercospora</i>, tar spot,
+      black spot, penggorok daun, dan bekas gigitan hama). Namun untuk jenis tanaman yang tidak ada di atas
+      (misalnya jarak kepyar, sirih, daun sendok, atau perilla) model belum pernah melihat daunnya, sehingga hasil sering
+      <b>tidak yakin</b> atau keliru.</p>
+    <p class="credit">Akurasi dihitung pada data validasi (citra yang tidak dipakai melatih model), ambang 50%.
+      Angka dari sedikit citra (&lt; 30) belum bisa dijadikan patokan.</p>
+    <a class="btn btn-primary" href="{{ url_for('deteksi') }}">Mulai deteksi <svg class="icon"><use href="#i-arrow"/></svg></a>
+  </div>
+</section>
+{% endblock %}

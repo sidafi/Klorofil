@@ -1,0 +1,16 @@
+file,true,pred,confidence,uncertain
+web_10.jpg,sakit,sehat,0.9955,0
+web_14.jpg,sakit,sehat,0.5598,1
+web_16.jpg,sakit,sakit,0.8468,1
+web_20.jpg,sakit,sakit,0.5855,1
+web_3.jpg,sakit,sakit,0.5855,1
+web_9.jpg,sakit,sakit,0.6328,1
+web_11.jpg,sehat,sehat,0.5593,1
+web_12.jpg,sehat,sehat,0.7260,1
+web_13.jpg,sehat,sehat,0.9937,0
+web_15.jpg,sehat,sehat,0.9993,0
+web_17.jpg,sehat,sehat,0.7056,1
+web_18.jpg,sehat,sakit,0.5896,1
+web_19.jpg,sehat,sehat,0.9996,0
+web_21.webp,sehat,sakit,0.5004,1
+web_4.webp,sehat,sakit,0.5004,1

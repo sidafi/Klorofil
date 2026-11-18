@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Deteksi Daun · Klorofil{% endblock %}
+{% block body_class %}page-detect{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <p class="eyebrow" data-hero>Deteksi</p>
+  <h1 data-split>Periksa satu daun.</h1>
+  <p class="lead" data-hero>Unggah foto atau gunakan kamera. Hasil muncul dalam beberapa detik.</p>
+</section>
+
+<section class="detect">
+  <div class="panel" data-reveal>
+    <form id="form" method="post" action="{{ url_for('deteksi') }}#hasil" enctype="multipart/form-data">
+      <label class="drop" for="image" id="drop">
+        <svg class="drop-icon" aria-hidden="true"><use href="#i-upload"/></svg>
+        <span class="drop-title">Seret foto ke sini atau <u>pilih file</u></span>
+        <span class="drop-hint">JPG, PNG, WEBP, BMP · maks 10 MB</span>
+        <img id="drop-preview" class="drop-preview" alt="Pratinjau foto terpilih" hidden>
+        <span id="drop-name" class="drop-name" hidden></span>
+      </label>
+      <input id="image" class="sr-only" type="file" name="image" accept="image/*" required>
+      <div class="actions">
+        <button class="btn btn-primary" type="submit" id="submit">
+          <svg class="icon" aria-hidden="true"><use href="#i-scan"/></svg><span>Analisis daun</span>
+        </button>
+        <button type="button" id="cam-open" class="btn btn-ghost" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg><span>Buka kamera</span>
+        </button>
+      </div>
+    </form>
+
+    <section id="camera" class="camera" hidden aria-label="Kamera">
+      <div class="viewfinder">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="guide" aria-hidden="true"></div>
+      </div>
+      <p class="hint">Posisikan satu daun di dalam kotak. Hanya area kotak yang dianalisis.</p>
+      <div class="actions">
+        <button type="button" id="cam-shot" class="btn btn-primary">
+          <svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg><span>Ambil foto &amp; analisis</span>
+        </button>
+        <button type="button" id="cam-close" class="btn btn-ghost">Tutup kamera</button>
+      </div>
+    </section>
+
+    <p id="cam-error" class="alert" role="alert" hidden></p>
+    {% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
+
+    <ul class="mini-tips">
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Satu daun memenuhi bingkai</li>
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Cahaya cukup, tidak dari belakang daun</li>
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Fokus tajam pada bercak/kerusakan</li>
+    </ul>
+  </div>
+
+  <div class="panel result-panel" id="hasil" aria-live="polite" data-reveal>
+    {% if result %}
+    {% set state = 'uncertain' if result.uncertain else result.label %}
+    <div class="result state-{{ state }}">
+      <img class="result-img" src="{{ preview }}" alt="Foto daun yang dianalisis">
+      <p class="badge">{% if result.uncertain %}Tidak yakin{% else %}Hasil analisis{% endif %}</p>
+      <h2 class="result-title">
+        {% if result.uncertain %}Kemungkinan {{ result.label }}{% else %}Daun {{ result.label }}{% endif %}
+      </h2>
+      <p class="result-note">
+        {% if result.uncertain %}
+          Keyakinan model di bawah {{ '%.0f'|format(threshold * 100) }}%. Coba foto ulang: satu daun, cahaya cukup, fokus tajam.
+          Bila tetap ragu, kemungkinan jenis daun ini belum dikenal model (<a href="{{ url_for('tanaman') }}">cek daftar</a>); jangan jadikan acuan.
+        {% elif result.label == 'sehat' %}
+          Tidak terlihat tanda penyakit atau kerusakan pada daun ini.
+        {% else %}
+          Terlihat tanda penyakit atau kerusakan. Periksa juga daun lain pada tanaman yang sama.
+        {% endif %}
+      </p>
+      <p class="conf"><span>Keyakinan</span><strong>{{ '%.1f'|format(result.confidence * 100) }}%</strong></p>
+      <ul class="bars">
+        {% for k, v in result.probs.items() %}
+        <li><span>{{ k }}</span><span class="bar"><i style="--v: {{ '%.4f'|format(v) }}"></i></span><span>{{ '%.1f'|format(v * 100) }}%</span></li>
+        {% endfor %}
+      </ul>
+      <a class="btn btn-ghost" href="{{ url_for('deteksi') }}">Periksa daun lain</a>
+      <p class="disclaimer">Hasil model, bukan diagnosis ahli. Paling andal untuk tomat, kentang, paprika, dan beberapa daun pohon
+        (lihat <a href="{{ url_for('tanaman') }}">daftar daun yang dikenali</a>); jenis lain dan daun berlubang karena hama bisa keliru.</p>
+    </div>
+    {% else %}
+    <div class="placeholder">
+      <svg class="placeholder-leaf" aria-hidden="true"><use href="#i-leaf"/></svg>
+      <h2>Hasil akan tampil di sini</h2>
+      <p>Pilih foto atau buka kamera, lalu tekan <b>Analisis daun</b>.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='camera.js') }}" defer></script>{% endblock %}

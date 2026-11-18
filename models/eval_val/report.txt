@@ -1,0 +1,73 @@
+== KESELURUHAN (val) (n=4172) ==
+  pred       sakit   sehat
+  true sakit    3129      91
+  true sehat      51     901
+
+              precision    recall  f1-score   support
+
+       sakit     0.9840    0.9717    0.9778      3220
+       sehat     0.9083    0.9464    0.9270       952
+
+    accuracy                         0.9660      4172
+   macro avg     0.9461    0.9591    0.9524      4172
+weighted avg     0.9667    0.9660    0.9662      4172
+
+
+== sumber: leaves (n=674) ==
+  pred       sakit   sehat
+  true sakit     289      44
+  true sehat      11     330
+
+              precision    recall  f1-score   support
+
+       sakit     0.9633    0.8679    0.9131       333
+       sehat     0.8824    0.9677    0.9231       341
+
+    accuracy                         0.9184       674
+   macro avg     0.9228    0.9178    0.9181       674
+weighted avg     0.9224    0.9184    0.9182       674
+
+
+== sumber: plantdoc (n=385) ==
+  pred       sakit   sehat
+  true sakit     229      28
+  true sehat      39      89
+
+              precision    recall  f1-score   support
+
+       sakit     0.8545    0.8911    0.8724       257
+       sehat     0.7607    0.6953    0.7265       128
+
+    accuracy                         0.8260       385
+   macro avg     0.8076    0.7932    0.7995       385
+weighted avg     0.8233    0.8260    0.8239       385
+
+
+== sumber: plantvillage (n=3095) ==
+  pred       sakit   sehat
+  true sakit    2593      19
+  true sehat       1     482
+
+              precision    recall  f1-score   support
+
+       sakit     0.9996    0.9927    0.9962      2612
+       sehat     0.9621    0.9979    0.9797       483
+
+    accuracy                         0.9935      3095
+   macro avg     0.9808    0.9953    0.9879      3095
+weighted avg     0.9938    0.9935    0.9936      3095
+
+
+== sumber: rice (n=18) ==
+  pred       sakit   sehat
+  true sakit      18       0
+  true sehat       0       0
+
+              precision    recall  f1-score   support
+
+       sakit     1.0000    1.0000    1.0000        18
+       sehat     0.0000    0.0000    0.0000         0
+
+    accuracy                         1.0000        18
+   macro avg     0.5000    0.5000    0.5000        18
+weighted avg     1.0000    1.0000    1.0000        18

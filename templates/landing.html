@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block body_class %}page-landing{% endblock %}
+{% block content %}
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-glow" aria-hidden="true"></div>
+  {% for i in range(6) %}
+  <span class="float-leaf fl-{{ i }}" aria-hidden="true"><svg><use href="#i-leaf"/></svg></span>
+  {% endfor %}
+
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <p class="eyebrow" data-hero>CNN dari nol · Tugas Besar AIT</p>
+      <h1 id="hero-title" data-split>Kenali daun sakit sebelum terlambat.</h1>
+      <p class="lead" data-hero>Unggah atau potret satu daun. Model CNN yang kami latih dari nol menilai apakah daun itu
+        <b>sehat</b> atau <b>sakit</b>, dalam hitungan detik.</p>
+      <div class="hero-cta" data-hero>
+        <a class="btn btn-sun" href="{{ url_for('deteksi') }}">Mulai deteksi <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-ghost-light" href="#cara-kerja">Cara kerja</a>
+      </div>
+    </div>
+
+    <figure class="leaf-art" aria-hidden="true">
+      <svg viewBox="0 0 300 400">
+        <defs>
+          <linearGradient id="blade-g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#4ADE80"/><stop offset=".55" stop-color="#16A34A"/><stop offset="1" stop-color="#14532D"/>
+          </linearGradient>
+          <clipPath id="blade-clip"><path d="M150 20 C 250 80, 285 235, 150 382 C 15 235, 50 80, 150 20 Z"/></clipPath>
+        </defs>
+        <path class="blade" d="M150 20 C 250 80, 285 235, 150 382 C 15 235, 50 80, 150 20 Z" fill="url(#blade-g)"/>
+        <g class="veins" fill="none" stroke="#DCFCE7" stroke-linecap="round" stroke-opacity=".75">
+          <path class="vein" stroke-width="3" d="M150 30 C 147 150, 153 260, 150 372"/>
+          <path class="vein" stroke-width="2" d="M150 95 C 125 100, 100 115, 82 140"/>
+          <path class="vein" stroke-width="2" d="M150 95 C 175 100, 200 115, 218 140"/>
+          <path class="vein" stroke-width="2" d="M150 150 C 120 155, 92 172, 70 200"/>
+          <path class="vein" stroke-width="2" d="M150 150 C 180 155, 208 172, 230 200"/>
+          <path class="vein" stroke-width="2" d="M150 205 C 120 212, 95 230, 78 258"/>
+          <path class="vein" stroke-width="2" d="M150 205 C 180 212, 205 230, 222 258"/>
+          <path class="vein" stroke-width="1.6" d="M150 262 C 128 270, 112 288, 102 310"/>
+          <path class="vein" stroke-width="1.6" d="M150 262 C 172 270, 188 288, 198 310"/>
+        </g>
+        <g clip-path="url(#blade-clip)"><rect class="scan" x="0" y="0" width="300" height="6" fill="#FDE68A" opacity=".85"/></g>
+      </svg>
+      <figcaption class="chip chip-a"><svg class="icon"><use href="#i-check"/></svg> Sehat · 96%</figcaption>
+      <span class="chip chip-b"><svg class="icon"><use href="#i-scan"/></svg> Menganalisis…</span>
+    </figure>
+  </div>
+  <a class="scroll-cue" href="#cara-kerja" aria-label="Gulir ke cara kerja"><span></span></a>
+</section>
+
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    {% for _ in range(2) %}
+    <span>Daun sehat</span><i></i><span>Daun sakit</span><i></i><span>CNN dari nol</span><i></i>
+    <span>Upload atau kamera</span><i></i><span>Hasil dalam detik</span><i></i><span>Tanpa model pretrained</span><i></i>
+    {% endfor %}
+  </div>
+</div>
+
+<section class="steps" id="cara-kerja" aria-labelledby="steps-title">
+  <div class="section-head">
+    <p class="eyebrow eyebrow-dark" data-reveal>Cara kerja</p>
+    <h2 id="steps-title" data-reveal>Tiga langkah, dari foto ke hasil.</h2>
+  </div>
+  <div class="steps-grid">
+    <svg class="steps-line" viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M20 60 C 200 0, 330 120, 500 60 S 800 0, 980 60" fill="none" stroke="#86EFAC" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <article class="step" data-reveal>
+      <span class="step-num">01</span>
+      <svg class="step-icon"><use href="#i-camera"/></svg>
+      <h3>Foto satu daun</h3>
+      <p>Unggah foto dari galeri atau potret langsung dengan kamera. Posisikan satu daun di tengah bingkai.</p>
+    </article>
+    <article class="step" data-reveal>
+      <span class="step-num">02</span>
+      <svg class="step-icon"><use href="#i-scan"/></svg>
+      <h3>CNN menganalisis</h3>
+      <p>Dua model CNN buatan sendiri membaca warna, tekstur, dan pola bercak daun, lalu menggabungkan penilaiannya.</p>
+    </article>
+    <article class="step" data-reveal>
+      <span class="step-num">03</span>
+      <svg class="step-icon"><use href="#i-leaf"/></svg>
+      <h3>Hasil &amp; keyakinan</h3>
+      <p>Anda melihat label sehat atau sakit beserta tingkat keyakinan. Bila model ragu, aplikasi akan memberi tahu.</p>
+    </article>
+  </div>
+</section>
+
+<section class="stats" aria-labelledby="stats-title">
+  <div class="section-head">
+    <p class="eyebrow" data-reveal>Di balik layar</p>
+    <h2 id="stats-title" data-reveal>Dilatih dari nol, diuji dengan jujur.</h2>
+  </div>
+  {# angka model deploy saat ini (ensemble R1+V3+V4, test v4); perbarui bila model berganti #}
+  <dl class="stats-grid">
+    <div class="stat" data-reveal><dt>Sumber dataset</dt><dd><span data-count="5">5</span></dd></div>
+    <div class="stat" data-reveal><dt>Parameter per model</dt><dd><span data-count="423">423</span><small>rb</small></dd></div>
+    <div class="stat" data-reveal><dt>Model CNN digabung</dt><dd><span data-count="3">3</span></dd></div>
+    <div class="stat" data-reveal><dt>Akurasi data uji</dt><dd><span data-count="91.8" data-dec="1">91,8</span><small>%</small></dd></div>
+  </dl>
+  <p class="stats-note" data-reveal>Diuji pada 5.708 citra yang tidak pernah dilihat saat pelatihan. Pada foto lapangan akurasi bisa lebih rendah;
+    karena itu aplikasi menandai hasil yang meragukan sebagai <b>tidak yakin</b>.</p>
+</section>
+
+<section class="tips" aria-labelledby="tips-title">
+  <div class="section-head">
+    <p class="eyebrow eyebrow-dark" data-reveal>Tips foto</p>
+    <h2 id="tips-title" data-reveal>Foto yang baik, hasil yang tepat.</h2>
+  </div>
+  <div class="tips-grid">
+    <div class="tip" data-reveal><svg class="tip-icon"><use href="#i-leaf"/></svg><h3>Satu daun</h3><p>Isi bingkai dengan satu daun. Foto seluruh tanaman membuat model ragu.</p></div>
+    <div class="tip" data-reveal><svg class="tip-icon"><use href="#i-sun"/></svg><h3>Cahaya cukup</h3><p>Hindari bayangan keras dan cahaya dari belakang daun.</p></div>
+    <div class="tip" data-reveal><svg class="tip-icon"><use href="#i-scan"/></svg><h3>Fokus tajam</h3><p>Pastikan bercak atau bagian yang rusak terlihat jelas, tidak buram.</p></div>
+  </div>
+</section>
+
+<section class="cta-final" aria-labelledby="cta-title">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <h2 id="cta-title" data-split>Siap memeriksa daunmu?</h2>
+  <a class="btn btn-sun btn-lg" href="{{ url_for('deteksi') }}" data-reveal>Mulai deteksi <svg class="icon"><use href="#i-arrow"/></svg></a>
+</section>
+{% endblock %}

@@ -1,0 +1,24 @@
+# dataset mentah & turunan (besar, bisa dibuat ulang dengan scripts/ + preprocess.py)
+archive*/
+*.zip
+data/*
+!data/tta_val_ckpt.npy
+# foto tim (data uji, pribadi): bagikan lewat Drive, bukan repo
+dataset daun collective/
+
+# model: hanya model.tflite yang di-commit (dibutuhkan deploy)
+models/*.keras
+models/train.log
+models_colab/
+models_run*/
+models_v1/
+models_v2*/
+models_v3/
+models_v4/
+models/*.log
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
