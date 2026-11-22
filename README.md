@@ -43,6 +43,36 @@ Data iNaturalist: `python scripts/fetch_inat.py`. Foto uji tim (`data/field_test
 
 Jalankan langkah berat (train, baseline, preprocess) satu per satu, jangan paralel: RAM bisa habis dan proses crash.
 
+## Tahap 2: penyakit per tanaman
+15 kelas `tanaman_penyakit` untuk tomat, kentang, paprika (PlantVillage + PlantDoc), split ikut tahap 1. Padi dikeluarkan (P2): data terlalu sedikit.
+| Langkah | Perintah |
+|---|---|
+| Susun data | `python penyakit.py` -> `data/penyakit/` |
+| Bundle Colab | `python scripts/make_colab_bundle.py --task penyakit` -> `penyakit_bundle.zip` |
+| Training | `notebooks/train_penyakit_colab.ipynb` (`train.py --task penyakit`) |
+| Evaluasi / ekspor | `evaluate.py --task penyakit`, `inference.py --export --task penyakit` -> `models/model_penyakit.tflite` |
+
+Hasil (run P2: lr 5e-4, tanpa class_weight; P1 dengan padi gagal aturan, macro F1 val 0,8311):
+| Split | Akurasi | Macro F1 | PlantVillage (studio) | PlantDoc (lapangan) |
+|---|---|---|---|---|
+| Val | 0,8740 | 0,8637 | – | 0,234 |
+| **Test** | **0,8828** | **0,8764** | 0,917 | 0,276 |
+
+Di app hasil penyakit hanya ditampilkan bila keyakinan >= 0,80 (val: 79,6% tampil, akurasi 0,966).
+Keterbatasan: kelas tungau & bercak target sering tertebak "tomat sehat"; foto lapangan jarang dikenali.
+
+## Jenis tanaman (transfer learning, J3)
+MobileNetV2 (bobot ImageNet, transfer learning; diizinkan dosen) untuk 8 jenis + "lainnya": tomat, kentang, paprika/cabai, padi,
+jagung, mangga, jambu biji, monstera. Data: `python jenis.py`, training `notebooks/train_jenis_colab.ipynb` (`train.py --task jenis --arch mobilenetv2`).
+
+| Run | Kelas | Metode | Macro F1 val | Macro F1 test |
+|---|---|---|---|---|
+| J1 | 22 | CNN dari nol | 0,403 | – |
+| J2 | 22 | MobileNetV2 transfer | 0,620 | – |
+| **J3** | **9** | MobileNetV2 transfer | **0,813** | **0,804** |
+
+Di app: ambang yakin 0,85 (val: 59,6% tampil yakin, akurasi 0,954); foto studio akurat (±0,98), foto lapangan lebih sulit (0,65–0,76).
+
 ## Arsitektur
 Input 128x128x3 → 4 blok [Conv3x3 (32, 64, 128, 256) → BatchNorm → ReLU → MaxPool] → GlobalAvgPool → Dropout 0.4 → Dense 128 ReLU → Dense softmax (2).
 

@@ -54,16 +54,44 @@
   const stop = () => { if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; cam.hidden = true; };
   const fail = (msg) => { err.textContent = msg; err.hidden = false; stop(); };
 
+  // pilih kamera (webcam / kamera depan / belakang); pilihan terakhir diingat di browser ini
+  const select = $("cam-select"), KEY = "klorofil-cam";
+  const saved = () => { try { return localStorage.getItem(KEY); } catch (_) { return null; } };
+
+  const start = async (deviceId) => {
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    const video_ = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: "environment" } };
+    stream = await navigator.mediaDevices.getUserMedia({ video: { ...video_, width: { ideal: 1280 } }, audio: false });
+    video.srcObject = stream;
+    return stream.getVideoTracks()[0].getSettings().deviceId;
+  };
+
+  const fillSelect = async (current) => {  // label perangkat baru terbaca setelah izin kamera diberikan
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+    select.innerHTML = "";
+    cams.forEach((d, i) => select.add(new Option(d.label || "Kamera " + (i + 1), d.deviceId, false, d.deviceId === current)));
+    $("cam-pick").hidden = cams.length < 2;
+  };
+
   $("cam-open").onclick = async () => {
     err.hidden = true;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } }, audio: false });
-      video.srcObject = stream;
+      let id;
+      try { id = await start(saved()); } catch (_) { id = await start(null); }  // kamera tersimpan sudah tidak ada
+      await fillSelect(id);
       cam.hidden = false;
       cam.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (e) {
       fail(e.name === "NotAllowedError" ? "Izin kamera ditolak. Izinkan akses kamera di pengaturan browser."
                                         : "Kamera tidak bisa dibuka (" + e.name + "). Gunakan upload file.");
+    }
+  };
+  select.onchange = async () => {
+    try {
+      await start(select.value);
+      try { localStorage.setItem(KEY, select.value); } catch (_) {}
+    } catch (e) {
+      fail("Kamera ini tidak bisa dibuka (" + e.name + "). Pilih kamera lain.");
     }
   };
   $("cam-close").onclick = stop;

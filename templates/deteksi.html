@@ -31,6 +31,10 @@
     </form>
 
     <section id="camera" class="camera" hidden aria-label="Kamera">
+      <label class="cam-pick" id="cam-pick" hidden>
+        <span>Kamera</span>
+        <select id="cam-select" aria-label="Pilih kamera"></select>
+      </label>
       <div class="viewfinder">
         <video id="video" autoplay playsinline muted></video>
         <div class="guide" aria-hidden="true"></div>
@@ -48,7 +52,9 @@
     {% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
 
     <ul class="mini-tips">
-      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Satu daun memenuhi bingkai</li>
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Satu daun memenuhi kotak panduan</li>
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Foto daun di tanamannya atau dipegang tangan</li>
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Hindari gambar stok berlatar putih polos</li>
       <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Cahaya cukup, tidak dari belakang daun</li>
       <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Fokus tajam pada bercak/kerusakan</li>
     </ul>
@@ -79,6 +85,31 @@
         <li><span>{{ k }}</span><span class="bar"><i style="--v: {{ '%.4f'|format(v) }}"></i></span><span>{{ '%.1f'|format(v * 100) }}%</span></li>
         {% endfor %}
       </ul>
+      {% if jenis %}
+      <section class="dugaan" aria-labelledby="jenis-title">
+        <h3 id="jenis-title">Jenis tanaman <small>8 jenis: tomat, kentang, paprika/cabai, padi, jagung, mangga, jambu biji, monstera</small></h3>
+        <p class="dugaan-top"><strong>{% if jenis.uncertain %}Kemungkinan {% endif %}{{ jenis.top[0][0] }}</strong> <span>{{ '%.0f'|format(jenis.top[0][1] * 100) }}%</span></p>
+        <ul class="dugaan-alt">
+          {% for nama, p in jenis.top[1:] %}<li>{{ nama }} <span>{{ '%.0f'|format(p * 100) }}%</span></li>{% endfor %}
+        </ul>
+        {% if jenis.other %}<p class="dugaan-note">Daun ini kemungkinan bukan salah satu dari 8 jenis yang dikenali model.</p>
+        {% elif jenis.uncertain %}<p class="dugaan-none">Model belum yakin. Coba foto satu daun lebih dekat dengan cahaya cukup.</p>{% endif %}
+      </section>
+      {% endif %}
+      {% if dugaan %}
+      <section class="dugaan" aria-labelledby="dugaan-title">
+        <h3 id="dugaan-title">Dugaan tanaman &amp; penyakit <small>khusus tomat, kentang, paprika</small></h3>
+        {% if dugaan.shown %}
+        <p class="dugaan-top"><strong>{{ dugaan.top[0][0] }}</strong> <span>{{ '%.0f'|format(dugaan.top[0][1] * 100) }}%</span></p>
+        <ul class="dugaan-alt">
+          {% for nama, p in dugaan.top[1:] %}<li>{{ nama }} <span>{{ '%.0f'|format(p * 100) }}%</span></li>{% endfor %}
+        </ul>
+        {% else %}
+        <p class="dugaan-none">Tidak dikenali dengan yakin. Bila ini bukan daun tomat, kentang, atau paprika, abaikan bagian ini.</p>
+        {% endif %}
+        <p class="dugaan-note">Model penyakit akurat pada foto satu daun berlatar polos; pada foto kebun sering keliru.</p>
+      </section>
+      {% endif %}
       <a class="btn btn-ghost" href="{{ url_for('deteksi') }}">Periksa daun lain</a>
       <p class="disclaimer">Hasil model, bukan diagnosis ahli. Paling andal untuk tomat, kentang, paprika, dan beberapa daun pohon
         (lihat <a href="{{ url_for('tanaman') }}">daftar daun yang dikenali</a>); jenis lain dan daun berlubang karena hama bisa keliru.</p>

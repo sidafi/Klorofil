@@ -15,6 +15,9 @@ models_v1/
 models_v2*/
 models_v3/
 models_v4/
+models_penyakit/
+models_jenis_j3/
+models_jenis_j4/
 models/*.log
 
 __pycache__/

@@ -31,6 +31,21 @@ def build_model(num_classes=len(CLASS_NAMES), img_size=IMG_SIZE, dropout=0.4, bn
     return tf.keras.Model(inputs, outputs, name="leafnet_v1")
 
 
+def build_transfer(num_classes, img_size=IMG_SIZE, dropout=0.3, weights="imagenet"):
+    """Tahap 2b (J2): transfer learning MobileNetV2 (bobot ImageNet; diizinkan dosen untuk transfer learning).
+    Input tetap 0-1 (sama dengan leafnet) -> Rescaling ke [-1, 1] sesuai praproses MobileNetV2 di dalam model.
+    Return (model, base); base dibekukan untuk fase 1, dibuka sebagian saat fine-tune (train.py)."""
+    base = tf.keras.applications.MobileNetV2(input_shape=(img_size, img_size, 3), include_top=False, weights=weights)
+    base.trainable = False
+    inputs = layers.Input(shape=(img_size, img_size, 3), name="image")
+    x = layers.Rescaling(2.0, offset=-1.0, name="to_mobilenet")(inputs)
+    x = base(x, training=False)  # BN base selalu mode inferensi (penting saat fine-tune data kecil)
+    x = layers.GlobalAveragePooling2D(name="gap")(x)
+    x = layers.Dropout(dropout, name="dropout")(x)
+    outputs = layers.Dense(num_classes, activation="softmax", name="output")(x)
+    return tf.keras.Model(inputs, outputs, name="mobilenetv2_transfer"), base
+
+
 if __name__ == "__main__":
     m = build_model()
     m.summary()

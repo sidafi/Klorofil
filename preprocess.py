@@ -105,8 +105,9 @@ def main():
     print("Selesai: data/processed/ + split.csv")
 
 
-def load_datasets(batch_size=32):
-    """Return (train_ds, val_ds, test_ds) tf.data, label int (0=sakit, 1=sehat).
+def load_datasets(batch_size=32, root=PROCESSED, class_names=CLASS_NAMES):
+    """Return (train_ds, val_ds, test_ds) tf.data, label int = indeks class_names (default 0=sakit, 1=sehat).
+    Tahap 2: root=penyakit.DATA, class_names=penyakit.CLASSES.
 
     val/test tidak diacak: urutan sama dengan ds.file_paths (untuk evaluasi per sumber).
     """
@@ -122,7 +123,7 @@ def load_datasets(batch_size=32):
 
     def load(split, shuffle):
         return tf.keras.utils.image_dataset_from_directory(
-            PROCESSED / split, labels="inferred", label_mode="int", class_names=CLASS_NAMES,
+            root / split, labels="inferred", label_mode="int", class_names=class_names,
             image_size=(IMG_SIZE, IMG_SIZE), batch_size=batch_size, shuffle=shuffle, seed=SEED)
 
     AUTO = tf.data.AUTOTUNE

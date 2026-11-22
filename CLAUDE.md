@@ -10,7 +10,8 @@ Konteks proyek untuk Claude Code. Ringkasan dari diskusi perencanaan sebelumnya.
 
 ## Aturan dosen (wajib dipatuhi)
 1. Model CNN, data berupa citra.
-2. DILARANG memakai model/arsitektur siap pakai atau bobot pretrained (YOLO, ResNet, MobileNet, transfer learning). Arsitektur disusun sendiri, bobot inisialisasi acak.
+2. Teks dosen: "tidak boleh menggunakan model AI yang sudah ada, KECUALI untuk transfer learning". Keputusan tim: tetap CNN
+   disusun sendiri + bobot acak (lebih ketat dari aturan; jadi nilai jual di jurnal). Dataset wajib citra RGB.
 3. Aplikasi online di PythonAnywhere (akun gratis: model harus kecil).
 4. Pengujian wajib menyajikan confusion matrix.
 5. Keluaran lain: jurnal (submit OJS gratis), laporan, PPT, dokumentasi Trello (Scrum).
@@ -48,7 +49,8 @@ Catatan data:
 - Ada beberapa file non-JPG (png/jpeg/tanpa ekstensi): validasi saat inspeksi.
 
 ## Keputusan
-- Framework: **Keras** (TensorFlow), layer disusun sendiri, tanpa bobot pretrained.
+- Framework: **Keras** (TensorFlow). Model sehat/sakit: layer disusun sendiri, tanpa bobot pretrained. Model jenis (J2-J4):
+  transfer learning MobileNetV2 ImageNet (diizinkan aturan dosen) -> WAJIB disebut jelas di laporan/jurnal.
 - Deploy: PythonAnywhere gratis kuota disk 512 MB; `tensorflow` penuh berisiko tidak muat. Cek lebih awal: `tensorflow-cpu` atau konversi ke TFLite (`tflite-runtime`).
 - Seed tetap (`SEED = 42`) untuk split dan training agar hasil bisa direproduksi.
 - Resize: center-crop persegi lalu 128x128 (bukan padding: bar hitam pada rice jadi jalan pintas sumber=label).
@@ -176,3 +178,87 @@ Dataset mentah (`archive*/`, `*.zip`) tidak di-commit ke repo.
   (hanya 1 label, n<30, atau <0,75). Hasil: 10 andal, 4 cukup, 17 terbatas. Jagung hanya punya data SAKIT (penjelas foto jagung sehat -> sakit).
 - Foto contoh: data train lokal; tanaman yang hanya dari PlantDoc (hak cipta scraping tak jelas) + ubi & monstera diganti foto
   iNaturalist CC0/CC-BY (dipilih manual, URL & atribusi di skrip). Pemetaan kode dataset `leaves` -> spesies: Chouhan dkk. 2019.
+
+## Tahap 2: penyakit per tanaman (disepakati 2026-11-18, pilihan 1)
+- Cakupan: tomat, kentang, paprika, padi (data nama penyakit kuat). 18 kelas "tanaman_penyakit" (termasuk *_sehat; padi tanpa sehat).
+  Sumber: PlantVillage + rice + PlantDoc yang namanya cocok (`penyakit.py`, data/penyakit/ = hardlink dari data/processed).
+  Di luar cakupan: leaves (tanpa nama penyakit), iNat (tanpa jenis tanaman), PlantDoc tanaman lain (data terlalu sedikit).
+- Split IKUT split.csv tahap 1 (file test tahap 1 tetap test) -> tidak ada kebocoran antar tahap.
+- Model: arsitektur leafnet sama (num_classes=18), dari nol, input 128. App: tahap 1 (sehat/sakit) tetap; model tahap 2 tampil
+  sebagai "dugaan tanaman & penyakit" hanya bila keyakinan >= ambang (dituning di val).
+- Aturan stop (dikunci SEBELUM training; SATU run di Colab, config R1 = `--no-class-weight --patience 12`):
+  dipakai di app jika macro F1 val >= 0,85. Jika tidak: tidak ditampilkan di app, tulis keterbatasan. TEST sekali setelah lolos.
+  Catatan risiko: padi hanya ±28 citra train per kelas (studio) -> F1 padi dilaporkan terpisah.
+- HASIL P1 (Colab, epoch terbaik 16/28): val acc 0,8738 / macro F1 0,8311 -> GAGAL aturan (< 0,85). Model tahap 2 TIDAK dipasang
+  di app; TEST tidak dijalankan. Kelemahan: padi (6 citra val/kelas; F1 gosong 0,36, bercak coklat 0,67), tungau->tomat_sehat
+  (71/249) & bercak target->tomat_sehat (29/203) -> presisi tomat_sehat 0,64; val loss sangat fluktuatif (seperti tahap 1).
+  Kuat: keriting kuning 0,96, kentang sehat 0,94, paprika 0,93. Hasil di Drive MyDrive/models_P1.
+- P2 (disepakati 2026-11-18, dikunci SEBELUM training; run TERAKHIR tahap 2): padi DIKELUARKAN dari cakupan (data tidak cukup:
+  ±28 train/kelas) -> 15 kelas tomat/kentang/paprika; lr 5e-4 (`--lr 0.0005 --patience 12`, tanpa class_weight). Dipakai di app
+  jika macro F1 val >= 0,85. Jika gagal: tahap 2 berhenti (tulis di jurnal sebagai keterbatasan), proyek lanjut tanpa tahap 2.
+- HASIL P2: val acc 0,8740 / macro F1 0,8637 -> LOLOS (>= 0,85). Kelemahan tetap: tungau->tomat_sehat 75/249, bercak target->
+  tomat_sehat 36/203 (presisi tomat_sehat 0,64); mosaik F1 0,74, hawar awal tomat 0,79. Berikutnya: TEST sekali, ekspor, ambang di val, app.
+- TEST P2 (sekali): acc 0,8828 / macro F1 0,8764; PlantVillage acc 0,917 (macro F1 0,914), PlantDoc (foto lapangan) acc 0,276
+  (n=174) -> model penyakit praktis hanya andal di foto studio/latar polos. Jalur app (PIL+TFLite) di val: acc 0,8734 (= Colab).
+- DEPLOY tahap 2: `models/model_penyakit.tflite` (hasil di `models_penyakit/`), `inference.PENYAKIT_THRESHOLD` = 0,80 (ambang terkecil
+  dgn akurasi tampil >= 0,95 di val: 79,6% tampil, akurasi 0,966; PlantDoc hanya ±5% lolos). App: blok "Dugaan tanaman & penyakit"
+  (top-3) di bawah hasil sehat/sakit; di bawah ambang -> "tidak dikenali". Tahap 2 SELESAI (tidak ada run lain).
+
+## Tahap 2b: JENIS tanaman (disepakati 2026-11-18; uji 51 foto user: penyakit P2 tampil 3/51 & ketiganya salah -> fokus jenis)
+- Target demo: daun yang wajar ditemui di Indonesia (pinggir jalan/kebun). 22 kelas: tomat, kentang, paprika_cabai, padi, jagung,
+  mangga, jambu_biji, pepaya, singkong, ubi_jalar, jati, monstera (Monstera dkk.), sirih, jarak_kepyar, jarak_pagar, mint, bayam,
+  kangkung, apel, anggur, mawar, lainnya (tumbuhan lain: iNat Indonesia + spesies leaves/PlantDoc di luar daftar).
+- Data: data lama berlabel jenis (PlantVillage, PlantDoc, rice, leaves, iNat jenis) + unduhan baru `fetch_inat.py --set jenis`
+  (archive (5)/inat_jenis, obs duplikat dgn archive (4) dilewati). iNat kelompok penyakit/hama (tanpa jenis) TIDAK dipakai.
+  Split: citra lama ikut split tahap 1; citra baru 70/15/15 stratifikasi per kelas (SEED 42). Batas per kelas di train agar seimbang.
+- Folder `dataset daun collective/`: 330 foto tim (±65 daun x 5 jepretan, meja putih), label sehat/sakit ada, jenis kosong ->
+  HANYA uji/demo. Berisi `transfer_learning.py` (ResNet18 pretrained; diizinkan sbg transfer learning, tapi bukan
+  bagian pipeline tim -> tidak dipakai/di-commit).
+- App: model jenis tampil dulu; dugaan penyakit (P2) hanya ditampilkan bila jenis = tomat/kentang/paprika_cabai dgn yakin.
+- Aturan stop (dikunci SEBELUM training; SATU run, config R1 `--no-class-weight --patience 12`): dipakai jika macro F1 val >= 0,80.
+  Jika gagal: app tanpa model jenis (penyakit juga disembunyikan), tulis keterbatasan.
+- HASIL J1 (Colab): val acc 0,5274 / macro F1 0,4029 -> GAGAL (< 0,80). Model jenis TIDAK dipakai; dugaan penyakit juga
+  disembunyikan dari app (`app.SHOW_DISEASE = False`; kode & model_penyakit.tflite tetap ada untuk jurnal). TEST J1 tidak dijalankan.
+  Analisis: model belajar latar/sumber, bukan bentuk daun -> "monstera" (satu-satunya kelas 1.400 foto kebun) jadi kelas buangan
+  foto lapangan (sirih 31, singkong 25, pepaya 22, lainnya 61); tomat/paprika/kentang (dominan studio PlantVillage) saling tertukar;
+  kelas ±280 foto iNat hampir gagal (jarak kepyar F1 0,00, mint 0,14, pepaya 0,14). Kuat: jambu 0,78, paprika 0,78, padi 0,70.
+  Tahap 2 SELESAI sebagai eksperimen (P2 lolos di foto studio; J1 gagal) -> keterbatasan + saran (data lapangan seimbang per jenis,
+  resolusi > 128, atau transfer learning yang diizinkan dosen) ditulis di jurnal. App = tahap 1 saja.
+- J2 TRANSFER LEARNING (disetujui user 2026-11-18; dosen membolehkan transfer learning): HANYA model jenis. Model sehat/sakit
+  tetap CNN dari nol (J1 vs J2 = perbandingan dari-nol vs transfer di jurnal). Backbone MobileNetV2 (alpha 1.0, bobot ImageNet,
+  input 128 = data/jenis apa adanya; Rescaling 0-1 -> [-1,1] di dalam model, jadi inference.py tidak berubah).
+  Training 2 fase: kepala (base beku, lr 1e-3) lalu fine-tune lapisan atas base (lr 1e-5, BN tetap beku). Data & split = J1.
+  Aturan (dikunci SEBELUM training; SATU run): J2 dipakai jika macro F1 val >= 0,80. Jika lolos: app tampilkan jenis
+  (ambang dituning di val) + dugaan penyakit HANYA bila jenis = tomat/kentang/paprika_cabai yakin. Jika gagal: app tetap tahap 1.
+- HASIL J2 (Colab, 15 epoch kepala + 20 fine-tune): val acc 0,6907 / macro F1 0,6195 -> GAGAL (< 0,80). App tetap tahap 1.
+  J1 -> J2: macro F1 0,403 -> 0,620 (+0,22): transfer learning jelas membantu (temuan jurnal). Kuat: paprika 0,88, padi 0,83,
+  jagung/jambu/mangga 0,81, monstera 0,79, kentang 0,78. Lemah: kelas ±280 foto (mint/kangkung 0,43, ubi 0,44, pepaya 0,46).
+  Val loss masih turun pelan di epoch 35 (belum konvergen) -> keterbatasan, bukan alasan run ulang. Test J2 tidak dijalankan.
+- JUDUL (user 2026-11-19: tanpa fitur nama penyakit; fokus kesehatan DAUN): karena J2 gagal, judul disarankan
+  "Klasifikasi Status Kesehatan Daun (Sehat/Sakit) Berbasis Convolutional Neural Network". Tahap 2 (P2, J1, J2) = eksperimen di jurnal.
+- J3 (disepakati user 2026-11-19, dikunci SEBELUM training; SATU run): 9 kelas = 8 jenis terkuat di val J2 (paprika_cabai, padi,
+  jagung, jambu_biji, mangga, monstera, kentang, tomat) + lainnya (13 jenis lain digabung ke "lainnya"). Data/split sama dgn J2
+  (file test tetap test), CAP per kelas sama (1.400/300/300). Config = J2 (MobileNetV2, 15 epoch kepala + 20 fine-tune, patience 6).
+  Karena kelas dipilih dari skor val J2 (bias seleksi), syarat dipakai: macro F1 val >= 0,80 DAN macro F1 TEST >= 0,80
+  (test dijalankan sekali, hanya bila val lolos). Lolos -> app tampilkan jenis (ambang dituning di val). Gagal -> app tetap tahap 1.
+- HASIL J3 VAL: acc 0,8019 / macro F1 0,8132 -> lolos syarat val (>= 0,80). Kuat: paprika 0,90, padi 0,87, jambu 0,85, monstera 0,85,
+  kentang 0,81, mangga 0,80. Lemah: lainnya 0,66 (presisi 0,59: foto kebun kelas lain -> lainnya), tomat 0,76 (recall 0,68).
+  Berikutnya: TEST sekali (syarat kedua: macro F1 test >= 0,80), ekspor models/model_jenis.tflite, ambang tampil di val.
+- TEST J3 (sekali): acc 0,7963 / macro F1 0,8044 -> LOLOS (val 0,8132 & test >= 0,80). Per sumber: PlantVillage 0,982, leaves 0,985,
+  rice 0,944, inat 0,763, PlantDoc 0,667, inatj 0,645 (foto lapangan jauh lebih sulit). Jalur app (PIL+TFLite) val acc 0,7882.
+- DEPLOY J3: `models/model_jenis.tflite` (hasil di `models_jenis_j3/`), `inference.JENIS_THRESHOLD` = 0,85 (ambang terkecil dgn
+  akurasi tampil >= 0,95 di val jalur app: 59,6% yakin, akurasi 0,954). App: blok "Jenis tanaman" (top-3) di hasil deteksi;
+  di bawah ambang -> "Kemungkinan X"; label lainnya -> "bukan salah satu dari 8 jenis". Dugaan nama penyakit TETAP nonaktif
+  (keputusan user: tanpa fitur nama penyakit). Judul -> "Identifikasi Jenis Tanaman dan Status Kesehatan Daun Berbasis CNN".
+- J4 (disepakati user 2026-11-20, dikunci SEBELUM training; SATU run). Masalah J3 (uji 12 foto user: 6/12): model memakai LATAR
+  (latar putih stok -> paprika/kentang; ganti latar abu mengubah cabai kentang 0,62 -> paprika 0,98). J4 = J3 + augmentasi ganti
+  latar khusus TRAIN data jenis: daun dari foto studio (PlantVillage, leaves) disegmentasi lalu ditempel ke latar acak
+  (putih, hitam, abu, warna polos, foto kebun). Kelas, split, val/test, config sama dgn J3. Segmentasi TIDAK dipakai di app.
+  Dipakai (menggantikan J3) jika macro F1 val >= 0,8132 (J3) DAN macro F1 test >= 0,80 DAN 12 foto user (uji J3 6/12) > 6/12.
+  Jika tidak: tetap J3. Foto user 12 = HANYA uji (data/field_jenis/), tidak dipakai melatih/memilih.
+- HASIL J4 VAL: acc 0,8051 / macro F1 0,8155 -> lolos syarat 1 (>= 0,8132, selisih tipis +0,002). Paprika 0,92, jagung 0,83,
+  kentang 0,83, tomat 0,77, lainnya 0,64 (vs J3 0,66). Berikutnya: TEST sekali + uji 12 foto user (data/field_jenis).
+- TEST J4: acc 0,7957 / macro F1 0,7974 -> GAGAL syarat 2 (< 0,80). 12 foto user: 6/12 (= J3) -> GAGAL syarat 3. APP TETAP J3.
+  Efek augmentasi latar: cabai latar putih kentang 0,65 -> paprika 0,99, padi 140 naik; tapi jambu 134 -> mangga, mangga latar
+  putih tetap paprika, tomat tetap lainnya/kentang. Temuan jurnal: ganti latar memperbaiki kasus yg jelas bergantung latar, tapi
+  tidak cukup mengatasi data lapangan yang sedikit per jenis. Hasil J4 di `models_jenis_j4/` (tidak dipakai). Tahap jenis SELESAI.

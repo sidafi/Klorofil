@@ -6,8 +6,10 @@ sakit: daun terserang patogen/hama di lapangan (karat, embun tepung, bercak, pen
 Hanya observasi research-grade, lisensi foto CC0 / CC-BY / CC-BY-NC, 1 foto per observasi (cegah bocor split).
 Hasil: archive (4)/inaturalist/{sehat,sakit}/<takson>/<obs>_<photo>.jpg + attribution.csv (wajib dikutip).
 
-Pakai:  python scripts/fetch_inat.py
+Pakai:  python scripts/fetch_inat.py              (data sehat/sakit, archive (4))
+        python scripts/fetch_inat.py --set jenis  (tahap 2 jenis tanaman, archive (5)/inat_jenis; label = nama jenis)
 """
+import argparse
 import csv
 import json
 import re
@@ -65,6 +67,32 @@ QUERIES = [
     ("sehat", "Citrus", {"taxon_name": "Citrus"}, 300),
 ]
 
+# Tahap 2 jenis: (jenis, nama folder, query, target). Buang observasi beranotasi berbunga/berbuah (13, 14) agar daun dominan.
+OUT_JENIS = ROOT / "archive (5)" / "inat_jenis"
+NO_FLOWER = {"without_term_value_id": "13,14"}
+# genus yang punya kelas sendiri (atau sudah di data) -> dikecualikan dari "lainnya"
+GENUS_JENIS = {"Solanum", "Capsicum", "Oryza", "Zea", "Mangifera", "Psidium", "Carica", "Manihot", "Ipomoea", "Tectona",
+               "Monstera", "Thaumatophyllum", "Philodendron", "Epipremnum", "Rhaphidophora", "Amydrium", "Piper", "Ricinus",
+               "Jatropha", "Mentha", "Amaranthus", "Malus", "Vitis", "Rosa"}
+QUERIES_JENIS = [
+    ("tomat", "Solanum lycopersicum", {"taxon_name": "Solanum lycopersicum", **NO_FLOWER}, 400),
+    ("kentang", "Solanum tuberosum", {"taxon_name": "Solanum tuberosum", **NO_FLOWER}, 400),
+    ("paprika_cabai", "Capsicum", {"taxon_name": "Capsicum", **NO_FLOWER}, 400),
+    ("padi", "Oryza sativa", {"taxon_name": "Oryza sativa", "quality_grade": "research,needs_id"}, 400),
+    ("jagung", "Zea mays", {"taxon_name": "Zea mays", **NO_FLOWER}, 400),
+    ("sirih", "Piper betle", {"taxon_name": "Piper betle", "quality_grade": "research,needs_id"}, 400),
+    ("jarak_kepyar", "Ricinus communis", {"taxon_name": "Ricinus communis", **NO_FLOWER}, 400),
+    ("jarak_pagar", "Jatropha curcas", {"taxon_name": "Jatropha curcas", **NO_FLOWER}, 400),
+    ("mint", "Mentha", {"taxon_name": "Mentha", **NO_FLOWER}, 400),
+    ("bayam", "Amaranthus", {"taxon_name": "Amaranthus", **NO_FLOWER}, 400),
+    ("kangkung", "Ipomoea aquatica", {"taxon_name": "Ipomoea aquatica", **NO_FLOWER}, 400),
+    ("apel", "Malus domestica", {"taxon_name": "Malus domestica", **NO_FLOWER}, 400),
+    ("anggur", "Vitis vinifera", {"taxon_name": "Vitis vinifera", **NO_FLOWER}, 400),
+    ("mawar", "Rosa", {"taxon_name": "Rosa", **NO_FLOWER}, 400),
+    # "lainnya": tumbuhan di Indonesia selain GENUS_JENIS (agar model bisa menjawab "bukan tanaman di daftar")
+    ("lainnya", "Plantae Indonesia", {"taxon_id": 47126, "place_id": 6966, **NO_FLOWER}, 1600),
+]
+
 
 def api(params):
     q = dict(photos="true", quality_grade="research", photo_license=LICENSES, per_page=200, order_by="id", order="desc")
@@ -95,13 +123,23 @@ def download(job):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--set", choices=("sehat_sakit", "jenis"), default="sehat_sakit")
+    jenis = ap.parse_args().set == "jenis"
+    out, queries = (OUT_JENIS, QUERIES_JENIS) if jenis else (OUT, QUERIES)
+    out.mkdir(parents=True, exist_ok=True)
     old = []
-    if (OUT / "attribution.csv").exists():
-        with (OUT / "attribution.csv").open(encoding="utf-8") as f:
+    if (out / "attribution.csv").exists():
+        with (out / "attribution.csv").open(encoding="utf-8") as f:
             old = list(csv.DictReader(f))
     done = {r["group"] for r in old}
+    # observasi yang sudah ada di data lain tidak diunduh ulang (cegah duplikat lintas split)
+    seen = {r["observation"] for r in old}
+    if jenis and (OUT / "attribution.csv").exists():
+        with (OUT / "attribution.csv").open(encoding="utf-8") as f:
+            seen |= {r["observation"] for r in csv.DictReader(f)}
     rows, jobs = [], []
-    for label, folder, params, target in QUERIES:
+    for label, folder, params, target in queries:
         if folder in done:  # sudah diunduh sebelumnya: jangan ubah data lama
             continue
         got, id_below = 0, None
@@ -114,13 +152,19 @@ def main():
             if not d["results"]:
                 break
             for o in d["results"]:
+                obs = "https://www.inaturalist.org/observations/{}".format(o["id"])
+                genus = ((o.get("taxon") or {}).get("name") or "").split(" ")[0]
+                if obs in seen or (label == "lainnya" and (genus in GENUS_JENIS or (o.get("taxon") or {}).get("rank") not in
+                                                            ("species", "subspecies", "variety", "genus"))):
+                    continue
+                seen.add(obs)
                 photo = next((p for p in o["photos"] if p.get("license_code") in LICENSES.split(",")), None)
                 if photo is None:
                     continue
-                dst = OUT / label / re.sub(r"[^\w .()-]", "_", folder) / "{}_{}.jpg".format(o["id"], photo["id"])
+                dst = out / label / re.sub(r"[^\w .()-]", "_", folder) / "{}_{}.jpg".format(o["id"], photo["id"])
                 jobs.append((photo["url"].replace("/square.", "/medium."), dst))
                 rows.append({"file": dst.relative_to(ROOT).as_posix(), "label": label, "group": folder,
-                             "taxon": (o.get("taxon") or {}).get("name", ""), "observation": "https://www.inaturalist.org/observations/{}".format(o["id"]),
+                             "taxon": (o.get("taxon") or {}).get("name", ""), "observation": obs,
                              "license": photo["license_code"], "attribution": photo.get("attribution", "")})
                 got += 1
                 if got >= target:
@@ -133,12 +177,12 @@ def main():
     with ThreadPoolExecutor(8) as ex:
         ok = list(ex.map(download, jobs))
     rows = old + [r for r, k in zip(rows, ok) if k]
-    with (OUT / "attribution.csv").open("w", newline="", encoding="utf-8") as f:
+    with (out / "attribution.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
         w.writeheader()
         w.writerows(rows)
-    print("unduh baru OK {}/{} | total sehat {} | sakit {} -> {}".format(sum(ok), len(ok), sum(r["label"] == "sehat" for r in rows),
-                                                          sum(r["label"] == "sakit" for r in rows), OUT.relative_to(ROOT)))
+    from collections import Counter
+    print("unduh baru OK {}/{} | per label {} -> {}".format(sum(ok), len(ok), dict(Counter(r["label"] for r in rows)), out.relative_to(ROOT)))
 
 
 if __name__ == "__main__":
